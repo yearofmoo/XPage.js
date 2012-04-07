@@ -52,6 +52,7 @@ XPage = new Class({
 
   getProxyObjectClassName : function(owner,klass,def) {
     try {
+      klass = klassify(klass);
       if(!klass || !XPage[owner][klass]) {
         throw new Error;
       }
@@ -147,7 +148,6 @@ XPage = new Class({
       throw new Error('XPage.js: You must provide a URL parameter for the load() method');
     }
     else if(this.options.maxRequests && this.getRequestsCount() > this.options.maxRequests) {
-      alert(this.getRequestsCount()+'1');
       this.onMaxRequests();
     }
     else {
@@ -459,6 +459,77 @@ XPage.Swappers.Slide = {
   after : function(container,fn) {
     var x = container.getSize().x;
     container.get('tween').start('left',[-x,0]).chain(fn);
+  },
+
+  cleanup : function() { }
+
+};
+
+XPage.Swappers.Bump = {
+
+  init : function(container,options) {
+    container.setStyle('position','relative');
+  },
+
+  before : function(container,fn) {
+    fn();
+  },
+
+  createTempElement : function(container) {
+    var klass = container.get('class');
+    return new Element('div',{
+      'class':klass,
+      'styles':{
+        'position':'relative',
+        'display':'none'
+      }
+    }).inject(container,'before');
+  },
+
+  swapByHTML : function(container,content,fn) {
+    var temp = this.createTempElement(container);
+    temp.set('html',content);
+    this.swap(temp,container,content,fn);
+  },
+
+  swapByElement : function(container,content,fn) {
+    var temp = this.createTempElement(container);
+    temp.empty().adopt(content);
+    this.swap(temp,container,content,fn);
+  },
+
+  swap : function(temp,container,content,fn) {
+    var height = temp.getDimensions().height;
+    temp.setStyles({
+      'display':'block'
+    });
+    new Fx.Elements($$(temp,container)).start({
+      '0' : {
+        'top':[-height,0],
+        'opacity':[0,1]
+      },
+      '1' : {
+        'top':[0,height],
+        'opacity':[1,0]
+      }
+    }).chain(function() {
+      temp.destroy();
+      this.resetContainer(container,content);
+      fn();
+    }.bind(this));
+  },
+
+  resetContainer : function(container,content) {
+    container.setStyles({
+      'position':'static',
+      'top':0,
+      'opacity':1
+    });
+    typeOf(content) == 'string' ? container.set('html',content) : container.empty().adopt(content);
+  },
+
+  after : function(container,fn) {
+    fn();
   },
 
   cleanup : function() { }
