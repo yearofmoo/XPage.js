@@ -27,7 +27,7 @@ XPage = new Class({
     perPageAssets : true,
     assetClassName : null,
     showLoading : true,
-    swapMethod : 'fade',
+    swapMethod : 'direct',
     swapOptions : {
 
     },
@@ -67,7 +67,7 @@ XPage = new Class({
   },
 
   getSwapObjectClassName : function() {
-    return this.getProxyObjectClassName('Swappers',this.options.swapMethod,'slide');
+    return this.getProxyObjectClassName('Swappers',this.options.swapMethod,'direct');
   },
 
   getLoadingObject : function() {
