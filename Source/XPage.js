@@ -468,7 +468,7 @@ XPage.Swappers.Slide = {
 XPage.Swappers.Bump = {
 
   init : function(container,options) {
-    container.setStyle('position','relative');
+    container.setStyle('position','absolute');
   },
 
   before : function(container,fn) {

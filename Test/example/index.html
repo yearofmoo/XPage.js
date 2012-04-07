@@ -18,6 +18,10 @@
   border-radius:5px;
 }
 #stage {
+  position:absolute;
+  height:1000px;
+  overflow:hidden;
+  width:100%;
   padding:1em;
   border-top:1px solid black;
   min-height:500px;
@@ -28,13 +32,15 @@
 <body id="" class=""> 
   <div id="wrapper">
     <nav id="links">
-      <a href="./page1.html">Page One</a>
+      <a href="./page1.html?123">Page One</a>
       <a href="./page2.html">Page Two</a>
       <a href="./timeout.php">Timeout Page (5 seconds)</a>
       <a href="./page3.html">Page With Assets</a>
     </nav>
     <div id="stage">
-      ... Click a link to load ...
+      <div class="inner">
+        ... Click a link to load ...
+      </div>
     </div>
   </div>
 <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/mootools/1.4.5/mootools-yui-compressed.js"></script>
@@ -46,7 +52,8 @@
 <script type="text/javascript">
 window.addEvent('domready',function() {
 
-  var manager = new XPage('stage',{
+  var inner = $('stage').getElement('.inner');
+  var manager = new XPage(inner,{
     swapMethod : 'bump',
     loadingOptions : {
       style : {
