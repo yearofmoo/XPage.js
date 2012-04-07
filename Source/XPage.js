@@ -10,7 +10,7 @@ XPage = new Class({
 
   Implements : [Options, Events],
 
-  Binds : ['onSuccess','onResponse','onRequest','onFailure','onTimeout','onAssetsReady'],
+  Binds : ['onSuccess','onResponse','onRequest','onFailure','onTimeout','onAssetsReady','onAfterSuccess','onReady','onBeforeReady'],
 
   options : {
     timeout : 5000,
@@ -27,6 +27,10 @@ XPage = new Class({
     perPageAssets : true,
     assetClassName : null,
     showLoading : true,
+    swapMethod : 'fade',
+    swapOptions : {
+
+    },
     loadingMethod : 'spinner',
     loadingOptions : {
 
@@ -46,11 +50,9 @@ XPage = new Class({
     return document.id(this.options.doc.body);
   },
 
-  getLoadingObjectClassName : function() {
-    var def = 'spinner';
+  getProxyObjectClassName : function(owner,klass,def) {
     try {
-      var klass = klassify(this.options.loadingMethod);
-      if(!klass || !XPage.Loaders[klass]) {
+      if(!klass || !XPage[owner][klass]) {
         throw new Error;
       }
       return klass;
@@ -58,6 +60,14 @@ XPage = new Class({
     catch(e) {
       return klassify(def);
     }
+  },
+
+  getLoadingObjectClassName : function() {
+    return this.getProxyObjectClassName('Loaders',this.options.loadingMethod,'spinner');
+  },
+
+  getSwapObjectClassName : function() {
+    return this.getProxyObjectClassName('Swappers',this.options.swapMethod,'slide');
   },
 
   getLoadingObject : function() {
@@ -68,27 +78,12 @@ XPage = new Class({
     return this.loadingObject;
   },
 
-  setSubContainer : function(key,element) {
-    this.getSubContainers()[key]=element;
-  },
-
-  getSubContainer : function(key) {
-    return this.getSubContainers()[key];
-  },
-
-  getSubContainers : function() {
-    if(!this.subContainers) {
-      this.subContainers = {};
+  getSwapObject : function() {
+    if(!this.swapObject) {
+      this.swapObject = Object.clone(XPage.Swappers[this.getSwapObjectClassName()]);
+      this.swapObject.init(this.getContainer(),this.options.swapOptions);
     }
-    return this.subContainers;
-  },
-
-  hasSubContainer : function(key) {
-    return !! this.getSubContainer(key);
-  },
-
-  hasSubContainers : function() {
-    return Object.keys(this.getSubContainers()).length > 0;
+    return this.swapObject;
   },
 
   getRequester : function() {
@@ -209,9 +204,12 @@ XPage = new Class({
   onSuccess : function() {
     this.updatePageProperties();
     this.updateLoading();
-    this.replaceContent();
+    this.replaceContent(this.onAfterSuccess);
+  },
+
+  onAfterSuccess : function() {
     this.updateLoading();
-    this.hasAssets() ? this.loadAssets() : this.onReady();
+    this.hasAssets() ? this.loadAssets() : this.onBeforeReady();
   },
 
   onFailure : function() {
@@ -235,31 +233,33 @@ XPage = new Class({
     return this.getXView().getHTML();
   },
 
-  onBeforeContentReplace : function() {
+  onBeforeContentReplace : function(fn) {
     this.fireEvent('beforeContent');
+    this.getSwapObject().before(this.getContainer(),fn);
   },
 
-  onAfterContentReplace : function() {
+  onAfterContentReplace : function(fn) {
     this.fireEvent('afterContent');
+    this.getSwapObject().after(this.getContainer(),fn);
   },
 
-  replaceContent : function() {
+  replaceContent : function(fn) {
     if(this.options.replaceContent) {
-      this.onBeforeContentReplace();
-      this.options.replaceContentViaHTML ? this.replaceContentViaHTML() : this.replaceContentViaElement();
-      this.onAfterContentReplace();
+      this.onBeforeContentReplace(function() {
+        this.options.replaceContentViaHTML ? this.replaceContentViaHTML(fn) : this.replaceContentViaElement(fn);
+      }.bind(this));
     }
     else {
       this.fireEvent('content',[this.getResponseHTML()]);
     }
   },
 
-  replaceContentViaElement : function() {
-    this.getContainer().empty().adopt(this.getResponseContent());
+  replaceContentViaElement : function(callback) {
+    this.getSwapObject().swapByElement(this.getContainer(),this.getResponseContent(),callback);
   },
 
-  replaceContentViaHTML : function() {
-    this.getContainer().set('html',this.getResponseHTML());
+  replaceContentViaHTML : function(callback) {
+    this.getSwapObject().swapByHTML(this.getContainer(),this.getResponseHTML(),callback);
   },
 
   hasAssets : function() {
@@ -310,7 +310,11 @@ XPage = new Class({
   },
 
   onAssetsReady : function() {
-    this.onReady();
+    this.onBeforeReady();
+  },
+
+  onBeforeReady : function() {
+    this.onAfterContentReplace(this.onReady);
   },
 
   onReady : function() {
@@ -375,6 +379,90 @@ XPage = new Class({
   }
 
 });
+
+XPage.Swappers = {};
+
+XPage.Swappers.Direct = {
+
+  init : function(container,options) { },
+
+  before : function(container,fn) {
+    fn();
+  },
+
+  swapByHTML : function(container,content,fn) {
+    container.set('html',content);
+    fn();
+  },
+
+  swapByElement : function(container,content,fn) {
+    container.empty().adopt(content);
+    fn();
+  },
+
+  after : function(container,fn) {
+    fn();
+  },
+
+  cleanup : function() { }
+
+};
+
+XPage.Swappers.Fade = {
+
+  init : function(container,options) { },
+
+  before : function(container,fn) {
+    container.get('tween').start('opacity',[1,0]).chain(fn);
+  },
+
+  swapByHTML : function(container,content,fn) {
+    container.set('html',content);
+    fn();
+  },
+
+  swapByElement : function(container,content,fn) {
+    container.empty().adopt(content);
+    fn();
+  },
+
+  after : function(container,fn) {
+    container.get('tween').start('opacity',[0,1]).chain(fn);
+  },
+
+  cleanup : function() { }
+
+};
+
+XPage.Swappers.Slide = {
+
+  init : function(container,options) {
+    container.setStyle('position','relative');
+  },
+
+  before : function(container,fn) {
+    var x = container.getSize().x;
+    container.get('tween').start('left',[0,x]).chain(fn);
+  },
+
+  swapByHTML : function(container,content,fn) {
+    container.set('html',content);
+    fn();
+  },
+
+  swapByElement : function(container,content,fn) {
+    container.empty().adopt(content);
+    fn();
+  },
+
+  after : function(container,fn) {
+    var x = container.getSize().x;
+    container.get('tween').start('left',[-x,0]).chain(fn);
+  },
+
+  cleanup : function() { }
+
+};
 
 XPage.Loaders = {};
 
