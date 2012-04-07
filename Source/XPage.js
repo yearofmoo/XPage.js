@@ -318,6 +318,7 @@ XPage = new Class({
   },
 
   onReady : function() {
+    this.getSwapObject().cleanup();
     this.onComplete();
     this.fireEvent('ready');
   },
