@@ -155,8 +155,12 @@ XPage = new Class({
         this.onLeave(options.url);
       }
       options.method = options.method || 'GET';
-      this.getRequester().setOptions(options).send();
+      this.request(options);
     }
+  },
+
+  request : function(options) {
+    this.getRequester().setOptions(options).send();
   },
 
   getHeader : function(key) {
