@@ -335,12 +335,14 @@ XPage = new Class({
 
   showLoading : function() {
     if(this.options.showLoading) {
+      this.fireEvent('showLoading');
       this.getLoadingObject().show(this.getContainer());
     }
   },
 
   hideLoading : function() {
     if(this.options.showLoading) {
+      this.fireEvent('hideLoading');
       this.getLoadingObject().hide(this.getContainer());
     }
   },
