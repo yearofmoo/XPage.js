@@ -38,7 +38,7 @@
       <a href="./page3.html">Page With Assets</a>
     </nav>
     <div id="stage">
-      <div class="inner">
+      <div class="container">
         ... Click a link to load ...
       </div>
     </div>
@@ -52,9 +52,9 @@
 <script type="text/javascript">
 window.addEvent('domready',function() {
 
-  var inner = $('stage').getElement('.inner');
+  var inner = $('stage').getElement('.container');
   var manager = new XPage(inner,{
-    swapMethod : 'bump',
+    swapMethod : 'CrossFade',
     loadingOptions : {
       style : {
         opacity : 0.5

@@ -17,6 +17,7 @@ XPage = new Class({
     minPageDelay : 1000,
     doc : document,
     maxRequests : 0,
+    useInnerElement : true,
     replaceContent : true,
     replaceContentViaHTML : false,
     useContainerForUpdates : false,
@@ -469,6 +470,56 @@ XPage.Swappers.Slide = {
 
 };
 
+XPage.Swappers.CrossFade = {
+
+  init : function(container,options) {
+    container.setStyle('position','relative');
+  },
+
+  before : function(container,fn) {
+    this.nextZIndex = (container.getStyle('z-index') || 1000) + 1;
+    fn();
+  },
+
+  swapByElement : function(container,content,fn) {
+    var z = this.nextZIndex;
+    var coords = {};
+    coords.left = 0;
+    coords.top = 0;
+    coords.position = 'absolute';
+    coords.opacity = 0;
+    coords['z-index'] = z;
+    content.setStyles(coords);
+    content.inject(container,'after');
+    new Fx.Elements([container,content]).start({
+      '0':{
+        'opacity':0
+      },
+      '1':{
+        'opacity':1
+      }
+    }).chain(function() {
+      container.destroy();
+      content.setStyles({
+        'position':'relative',
+        'top':0,
+        'left':0
+      });
+      fn();
+    });
+  },
+
+  swapByHTML : function(container,content,fn) {
+    content = Elements.from(content);
+    this.swapByElement(container,content,fn);
+  },
+
+  after : function() {
+
+  }
+
+};
+
 XPage.Swappers.Bump = {
 
   init : function(container,options) {
@@ -545,15 +596,17 @@ XPage.Loaders = {};
 XPage.Loaders.Spinner = {
 
   init : function(container,options) {
+    this.noFox = !!options.noFx;
+    delete options.noFx;
     this.spinner = new Spinner(container,options);
   },
 
   show : function(container) {
-    this.spinner.show();
+    this.spinner.show(this.options.noFx);
   },
 
   hide : function(container) {
-    this.spinner.hide();
+    this.spinner.hide(this.options.noFx);
   },
 
   update : function(container) {
