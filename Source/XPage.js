@@ -596,7 +596,7 @@ XPage.Loaders = {};
 XPage.Loaders.Spinner = {
 
   init : function(container,options) {
-    this.noFox = !!options.noFx;
+    this.noFx = !!options.noFx;
     delete options.noFx;
     this.spinner = new Spinner(container,options);
   },
