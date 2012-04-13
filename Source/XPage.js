@@ -602,11 +602,11 @@ XPage.Loaders.Spinner = {
   },
 
   show : function(container) {
-    this.spinner.show(this.options.noFx);
+    this.spinner.show(this.noFx);
   },
 
   hide : function(container) {
-    this.spinner.hide(this.options.noFx);
+    this.spinner.hide(this.noFx);
   },
 
   update : function(container) {
