@@ -618,15 +618,17 @@ XPage.Loaders.Spinner = {
 XPage.Loaders.CursorLoader = {
 
   init : function(container,options) {
+    this.noFx = !!options.noFx;
+    delete options.noFx;
     CursorLoader.init(options);
   },
 
   show : function(container) {
-    CursorLoader.show();
+    this.noFx ? CursorLoader.show() : CursorLoader.reveal();
   },
 
   hide : function(container) {
-    CursorLoader.hide();
+    this.noFx ? CursorLoader.hide() : CursorLoader.dissolve();
   },
 
   update : function() { }
