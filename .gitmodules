@@ -1,6 +1,0 @@
-[submodule "Source/XView.js"]
-	path = Source/XView.js
-	url = git://github.com/matsko/XView.js.git
-[submodule "Source/MooTools-Asset.Extras"]
-	path = Source/MooTools-Asset.Extras
-	url = git://github.com/matsko/MooTools-Asset.Extras.git
