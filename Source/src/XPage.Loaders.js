@@ -8,6 +8,8 @@ XPage.Loaders.Spinner = {
     this.spinner = new Spinner(container,options);
   },
 
+  replaceContainer : function(container) {},
+
   show : function(container) {
     this.spinner.show(this.noFx);
   },
@@ -30,6 +32,8 @@ XPage.Loaders.CursorLoader = {
     CursorLoader.init(options);
   },
 
+  replaceContainer : function(container) {},
+
   show : function(container) {
     this.noFx ? CursorLoader.show() : CursorLoader.reveal();
   },
@@ -40,4 +44,4 @@ XPage.Loaders.CursorLoader = {
 
   update : function() { }
 
-}
+};

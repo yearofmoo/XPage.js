@@ -47,6 +47,17 @@ XPage = new Class({
     return this.container;
   },
 
+  getLoaderContainer : function() {
+    return this.loaderContainer || this.getContainer();
+  },
+
+  setLoaderContainer : function(container) {
+    this.loaderContainer = document.id(container);
+    if(this.loadingObject) {
+      this.loadingObject.replaceContainer(this.loaderContainer);
+    }
+  },
+
   getDocumentBody : function() {
     return document.id(this.options.doc.body);
   },
@@ -75,7 +86,7 @@ XPage = new Class({
   getLoadingObject : function() {
     if(!this.loadingObject) {
       this.loadingObject = Object.clone(XPage.Loaders[this.getLoadingObjectClassName()]);
-      this.loadingObject.init(this.getContainer(),this.options.loadingOptions);
+      this.loadingObject.init(this.getLoaderContainer(),this.options.loadingOptions);
     }
     return this.loadingObject;
   },
@@ -336,20 +347,20 @@ XPage = new Class({
   showLoading : function() {
     if(this.options.showLoading) {
       this.fireEvent('showLoading');
-      this.getLoadingObject().show(this.getContainer());
+      this.getLoadingObject().show(this.getLoaderContainer());
     }
   },
 
   hideLoading : function() {
     if(this.options.showLoading) {
       this.fireEvent('hideLoading');
-      this.getLoadingObject().hide(this.getContainer());
+      this.getLoadingObject().hide(this.getLoaderContainer());
     }
   },
 
   updateLoading : function() {
     if(this.options.showLoading) {
-      this.getLoadingObject().update(this.getContainer());
+      this.getLoadingObject().update(this.getLoaderContainer());
     }
   },
 
