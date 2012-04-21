@@ -1,0 +1,8 @@
+- repo: git://github.com/matsko/MooTools-Asset.Extras.git
+  path: Source/include/MooTools-Asset.Extras
+- repo: git://github.com/matsko/MooTools-Asset.Extras.git
+  path: Source/include/MooTools-Asset.css-patch
+- repo: git://github.com/matsko/XView.js.git
+  path: Source/include/XView.js
+- repo: git://github.com/matsko/XPartial.js.git
+  path: Source/include/XPartial.js
