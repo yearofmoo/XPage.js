@@ -2,6 +2,7 @@ src:
   input:
     - Source/src/XPage.License.txt
     - Source/src/XPage.js
+    - Source/src/XPage.Swappers.js
     - Source/src/XPage.Loaders.js
   output:
     - Source/XPage.js
