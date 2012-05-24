@@ -18,13 +18,16 @@
   border-radius:5px;
 }
 #stage {
-  position:absolute;
+  position:relative;
   height:1000px;
   overflow:hidden;
   width:100%;
-  padding:1em;
   border-top:1px solid black;
   min-height:500px;
+}
+.container {
+  padding:20px;
+  background:white;
 }
 </style>
 </head> 
@@ -33,7 +36,7 @@
   <div id="wrapper">
     <nav id="links">
       <a href="./page1.html?123">Page One</a>
-      <a href="./page2.html">Page Two</a>
+      <a href="./page2.html?123123123">Page Two</a>
       <a href="./timeout.php">Timeout Page (5 seconds)</a>
       <a href="./page3.html">Page With Assets</a>
     </nav>
@@ -48,16 +51,14 @@
 <script type="text/javascript" src="../../Source/include/MooTools-Asset.css-patch/Source/Asset.css.js"></script>
 <script type="text/javascript" src="../../Source/include/MooTools-Asset.Extras/Source/Asset.Extras.js"></script>
 <script type="text/javascript" src="../../Source/include/XView.js/Source/XView.js"></script>
-<script type="text/javascript" src="../../Source/include/XPartial.js/Source/XPartial.js"></script>
+<script type="text/javascript" src="../../Source/include/Fx.Swap/Source/Fx.Swap.js"></script>
 <script type="text/javascript" src="../../Source/src/XPage.js"></script>
-<script type="text/javascript" src="../../Source/src/XPage.Swappers.js"></script>
 <script type="text/javascript" src="../../Source/src/XPage.Loaders.js"></script>
 <script type="text/javascript">
 window.addEvent('domready',function() {
 
-  var inner = $('stage').getElement('.container');
+  var inner = $('stage');
   var manager = new XPage(inner,{
-    swapMethod : 'CrossFade',
     loadingOptions : {
       style : {
         opacity : 0.5

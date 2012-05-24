@@ -28,7 +28,7 @@ XPage = new Class({
     perPageAssets : true,
     assetClassName : null,
     showLoading : true,
-    swapMethod : 'direct',
+    swapMethod : 'Fade',
     swapOptions : {
 
     },
@@ -79,10 +79,6 @@ XPage = new Class({
     return this.getProxyObjectClassName('Loaders',this.options.loadingMethod,'spinner');
   },
 
-  getSwapObjectClassName : function() {
-    return this.getProxyObjectClassName('Swappers',this.options.swapMethod,'direct');
-  },
-
   getLoadingObject : function() {
     if(!this.loadingObject) {
       this.loadingObject = Object.clone(XPage.Loaders[this.getLoadingObjectClassName()]);
@@ -93,8 +89,8 @@ XPage = new Class({
 
   getSwapObject : function() {
     if(!this.swapObject) {
-      this.swapObject = Object.clone(XPage.Swappers[this.getSwapObjectClassName()]);
-      this.swapObject.init(this.getContainer(),this.options.swapOptions);
+      this.swapObject = new Fx.Swap(this.getContainer(),this.options.swapOptions);
+      this.swapObject.setSwapper(this.options.swapMethod);
     }
     return this.swapObject;
   },
@@ -238,44 +234,87 @@ XPage = new Class({
   },
 
   getResponseContent : function() {
-    return this.getXView().getContent();
+    content = this.getXView().getContent();
+    var children = content.getChildren();
+    var content, length = children.length;
+    if(length == 1) {
+      content = children[0];
+    }
+    else if(length > 1) {
+      content = new Element('div').adopt(children);
+    }
+    return content;
   },
 
   getRawResponseHTML : function() {
-    return this.getXView().getRawHTML();
+    return this.getXView().getHTML();
   },
 
   getResponseHTML : function() {
     return this.getXView().getHTML();
   },
 
+  prepareContentReplace : function() {
+    var container = this.getContainer();
+    var inner = this.getInnerContainer();
+    var content = this.getResponseContent();
+    content.hide().inject(this.getContainer());
+    this.getSwapObject().getSwapper().setElements(container,inner,content);
+    this.setNewInnerContainer(content);
+  },
+
+  getNewInnerContainer : function() {
+    return this.newInnerContainer;
+  },
+
+  setNewInnerContainer : function(container) {
+    this.newInnerContainer = container;
+  },
+
+  cleanupContentReplace : function() {
+    var content = this.getNewInnerContainer();
+    var inner = this.getInnerContainer();
+    this.getSwapObject().onComplete(inner,content);
+    this.setInnerContainer(content);
+  },
+
   onBeforeContentReplace : function(fn) {
+    var swapper = this.getSwapObject();
+    swapper.onBeforeSwap(this.getInnerContainer(),this.getNewInnerContainer());
+    swapper.getSwapper().before(fn);
     this.fireEvent('beforeContent');
-    this.getSwapObject().before(this.getContainer(),fn);
+  },
+
+  getInnerContainer : function() {
+    if(!this.innerContainer) {
+      this.innerContainer = this.getContainer().getChildren()[0];
+    }
+    return this.innerContainer;
+  },
+
+  setInnerContainer : function(container) {
+    if(this.innerContainer) {
+      this.innerContainer.destroy();
+      this.innerContainer = null;
+    }
+    this.innerContainer = container;
   },
 
   onAfterContentReplace : function(fn) {
     this.fireEvent('afterContent');
-    this.getSwapObject().after(this.getContainer(),fn);
+    this.getSwapObject().getSwapper().after(fn);
   },
 
   replaceContent : function(fn) {
     if(this.options.replaceContent) {
+      this.prepareContentReplace();
       this.onBeforeContentReplace(function() {
-        this.options.replaceContentViaHTML ? this.replaceContentViaHTML(fn) : this.replaceContentViaElement(fn);
+        this.getSwapObject().getSwapper().during(fn);
       }.bind(this));
     }
     else {
       this.fireEvent('content',[this.getResponseHTML()]);
     }
-  },
-
-  replaceContentViaElement : function(callback) {
-    this.getSwapObject().swapByElement(this.getContainer(),this.getResponseContent(),callback);
-  },
-
-  replaceContentViaHTML : function(callback) {
-    this.getSwapObject().swapByHTML(this.getContainer(),this.getResponseHTML(),callback);
   },
 
   hasAssets : function() {
@@ -330,11 +369,13 @@ XPage = new Class({
   },
 
   onBeforeReady : function() {
-    this.onAfterContentReplace(this.onReady);
+    this.onAfterContentReplace(function() {
+      this.cleanupContentReplace();
+      this.onReady();
+    }.bind(this));
   },
 
   onReady : function() {
-    this.getSwapObject().cleanup();
     this.onComplete();
     this.fireEvent('ready');
   },

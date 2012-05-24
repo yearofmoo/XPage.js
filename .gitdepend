@@ -6,3 +6,5 @@
   path: Source/include/XView.js
 - repo: git://github.com/matsko/XPartial.js.git
   path: Source/include/XPartial.js
+- repo: git://github.com/matsko/Fx.Swap.git
+  path: Source/include/Fx.Swap

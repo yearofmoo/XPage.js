@@ -28,7 +28,7 @@ XPage = new Class({
     perPageAssets : true,
     assetClassName : null,
     showLoading : true,
-    swapMethod : 'direct',
+    swapMethod : 'Fade',
     swapOptions : {
 
     },
@@ -79,10 +79,6 @@ XPage = new Class({
     return this.getProxyObjectClassName('Loaders',this.options.loadingMethod,'spinner');
   },
 
-  getSwapObjectClassName : function() {
-    return this.getProxyObjectClassName('Swappers',this.options.swapMethod,'direct');
-  },
-
   getLoadingObject : function() {
     if(!this.loadingObject) {
       this.loadingObject = Object.clone(XPage.Loaders[this.getLoadingObjectClassName()]);
@@ -93,8 +89,8 @@ XPage = new Class({
 
   getSwapObject : function() {
     if(!this.swapObject) {
-      this.swapObject = Object.clone(XPage.Swappers[this.getSwapObjectClassName()]);
-      this.swapObject.init(this.getContainer(),this.options.swapOptions);
+      this.swapObject = new Fx.Swap(this.getContainer(),this.options.swapOptions);
+      this.swapObject.setSwapper(this.options.swapMethod);
     }
     return this.swapObject;
   },
@@ -238,44 +234,87 @@ XPage = new Class({
   },
 
   getResponseContent : function() {
-    return this.getXView().getContent();
+    content = this.getXView().getContent();
+    var children = content.getChildren();
+    var content, length = children.length;
+    if(length == 1) {
+      content = children[0];
+    }
+    else if(length > 1) {
+      content = new Element('div').adopt(children);
+    }
+    return content;
   },
 
   getRawResponseHTML : function() {
-    return this.getXView().getRawHTML();
+    return this.getXView().getHTML();
   },
 
   getResponseHTML : function() {
     return this.getXView().getHTML();
   },
 
+  prepareContentReplace : function() {
+    var container = this.getContainer();
+    var inner = this.getInnerContainer();
+    var content = this.getResponseContent();
+    content.hide().inject(this.getContainer());
+    this.getSwapObject().getSwapper().setElements(container,inner,content);
+    this.setNewInnerContainer(content);
+  },
+
+  getNewInnerContainer : function() {
+    return this.newInnerContainer;
+  },
+
+  setNewInnerContainer : function(container) {
+    this.newInnerContainer = container;
+  },
+
+  cleanupContentReplace : function() {
+    var content = this.getNewInnerContainer();
+    var inner = this.getInnerContainer();
+    this.getSwapObject().onComplete(inner,content);
+    this.setInnerContainer(content);
+  },
+
   onBeforeContentReplace : function(fn) {
+    var swapper = this.getSwapObject();
+    swapper.onBeforeSwap(this.getInnerContainer(),this.getNewInnerContainer());
+    swapper.getSwapper().before(fn);
     this.fireEvent('beforeContent');
-    this.getSwapObject().before(this.getContainer(),fn);
+  },
+
+  getInnerContainer : function() {
+    if(!this.innerContainer) {
+      this.innerContainer = this.getContainer().getChildren()[0];
+    }
+    return this.innerContainer;
+  },
+
+  setInnerContainer : function(container) {
+    if(this.innerContainer) {
+      this.innerContainer.destroy();
+      this.innerContainer = null;
+    }
+    this.innerContainer = container;
   },
 
   onAfterContentReplace : function(fn) {
     this.fireEvent('afterContent');
-    this.getSwapObject().after(this.getContainer(),fn);
+    this.getSwapObject().getSwapper().after(fn);
   },
 
   replaceContent : function(fn) {
     if(this.options.replaceContent) {
+      this.prepareContentReplace();
       this.onBeforeContentReplace(function() {
-        this.options.replaceContentViaHTML ? this.replaceContentViaHTML(fn) : this.replaceContentViaElement(fn);
+        this.getSwapObject().getSwapper().during(fn);
       }.bind(this));
     }
     else {
       this.fireEvent('content',[this.getResponseHTML()]);
     }
-  },
-
-  replaceContentViaElement : function(callback) {
-    this.getSwapObject().swapByElement(this.getContainer(),this.getResponseContent(),callback);
-  },
-
-  replaceContentViaHTML : function(callback) {
-    this.getSwapObject().swapByHTML(this.getContainer(),this.getResponseHTML(),callback);
   },
 
   hasAssets : function() {
@@ -330,11 +369,13 @@ XPage = new Class({
   },
 
   onBeforeReady : function() {
-    this.onAfterContentReplace(this.onReady);
+    this.onAfterContentReplace(function() {
+      this.cleanupContentReplace();
+      this.onReady();
+    }.bind(this));
   },
 
   onReady : function() {
-    this.getSwapObject().cleanup();
     this.onComplete();
     this.fireEvent('ready');
   },
@@ -400,210 +441,6 @@ XPage = new Class({
 });
 
 })();
-XPage.Swappers = {};
-
-XPage.Swappers.Direct = {
-
-  init : function(container,options) { },
-
-  before : function(container,fn) {
-    fn();
-  },
-
-  swapByHTML : function(container,content,fn) {
-    container.set('html',content);
-    fn();
-  },
-
-  swapByElement : function(container,content,fn) {
-    container.empty().adopt(content);
-    fn();
-  },
-
-  after : function(container,fn) {
-    fn();
-  },
-
-  cleanup : function() { }
-
-};
-
-XPage.Swappers.Fade = {
-
-  init : function(container,options) { },
-
-  before : function(container,fn) {
-    container.get('tween').start('opacity',[1,0]).chain(fn);
-  },
-
-  swapByHTML : function(container,content,fn) {
-    container.set('html',content);
-    fn();
-  },
-
-  swapByElement : function(container,content,fn) {
-    container.empty().adopt(content);
-    fn();
-  },
-
-  after : function(container,fn) {
-    container.get('tween').start('opacity',[0,1]).chain(fn);
-  },
-
-  cleanup : function() { }
-
-};
-
-XPage.Swappers.Slide = {
-
-  init : function(container,options) {
-    container.setStyle('position','relative');
-  },
-
-  before : function(container,fn) {
-    var x = container.getSize().x;
-    container.get('tween').start('left',[0,x]).chain(fn);
-  },
-
-  swapByHTML : function(container,content,fn) {
-    container.set('html',content);
-    fn();
-  },
-
-  swapByElement : function(container,content,fn) {
-    container.empty().adopt(content);
-    fn();
-  },
-
-  after : function(container,fn) {
-    var x = container.getSize().x;
-    container.get('tween').start('left',[-x,0]).chain(fn);
-  },
-
-  cleanup : function() { }
-
-};
-
-XPage.Swappers.CrossFade = {
-
-  init : function(container,options) {
-    container.setStyle('position','relative');
-  },
-
-  before : function(container,fn) {
-    this.nextZIndex = (container.getStyle('z-index') || 1000) + 1;
-    fn();
-  },
-
-  swapByElement : function(container,content,fn) {
-    var z = this.nextZIndex;
-    var coords = {};
-    coords.left = 0;
-    coords.top = 0;
-    coords.position = 'absolute';
-    coords.opacity = 0;
-    coords['z-index'] = z;
-    content.setStyles(coords);
-    content.inject(container,'after');
-    new Fx.Elements([container,content]).start({
-      '0':{
-        'opacity':0
-      },
-      '1':{
-        'opacity':1
-      }
-    }).chain(function() {
-      container.destroy();
-      content.setStyles({
-        'position':'relative',
-        'top':0,
-        'left':0
-      });
-      fn();
-    });
-  },
-
-  swapByHTML : function(container,content,fn) {
-    content = Elements.from(content);
-    this.swapByElement(container,content,fn);
-  },
-
-  after : function() {
-
-  }
-
-};
-
-XPage.Swappers.Bump = {
-
-  init : function(container,options) {
-    container.setStyle('position','absolute');
-  },
-
-  before : function(container,fn) {
-    fn();
-  },
-
-  createTempElement : function(container) {
-    var klass = container.get('class');
-    return new Element('div',{
-      'class':klass,
-      'styles':{
-        'position':'relative',
-        'display':'none'
-      }
-    }).inject(container,'before');
-  },
-
-  swapByHTML : function(container,content,fn) {
-    var temp = this.createTempElement(container);
-    temp.set('html',content);
-    this.swap(temp,container,content,fn);
-  },
-
-  swapByElement : function(container,content,fn) {
-    var temp = this.createTempElement(container);
-    temp.empty().adopt(content);
-    this.swap(temp,container,content,fn);
-  },
-
-  swap : function(temp,container,content,fn) {
-    var height = temp.getDimensions().height;
-    temp.setStyles({
-      'display':'block'
-    });
-    new Fx.Elements($$(temp,container)).start({
-      '0' : {
-        'top':[-height,0],
-        'opacity':[0,1]
-      },
-      '1' : {
-        'top':[0,height],
-        'opacity':[1,0]
-      }
-    }).chain(function() {
-      temp.destroy();
-      this.resetContainer(container,content);
-      fn();
-    }.bind(this));
-  },
-
-  resetContainer : function(container,content) {
-    container.setStyles({
-      'position':'static',
-      'top':0,
-      'opacity':1
-    });
-    typeOf(content) == 'string' ? container.set('html',content) : container.empty().adopt(content);
-  },
-
-  after : function(container,fn) {
-    fn();
-  },
-
-  cleanup : function() { }
-
-};
 XPage.Loaders = {};
 
 XPage.Loaders.Spinner = {
