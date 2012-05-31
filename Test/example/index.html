@@ -3,7 +3,7 @@
 <head>
 <style type="text/css">
 .spinner {
-  background:white;
+  background:white url(../Assets/images/spinner.gif) 20px 20px no-repeat;
 }
 #links {
   margin-bottom:1em;
@@ -59,10 +59,8 @@ window.addEvent('domready',function() {
 
   var inner = $('stage');
   var manager = new XPage(inner,{
-    loadingOptions : {
-      style : {
-        opacity : 0.5
-      }
+    before : function(fn) {
+      fn.delay(1000);
     }
   });
 

@@ -28,7 +28,7 @@ XPage = new Class({
     perPageAssets : true,
     assetClassName : null,
     showLoading : true,
-    swapMethod : 'Fade',
+    swapMethod : 'direct',
     swapOptions : {
 
     },
@@ -89,8 +89,12 @@ XPage = new Class({
 
   getSwapObject : function() {
     if(!this.swapObject) {
-      this.swapObject = new Fx.Swap(this.getContainer(),this.options.swapOptions);
-      this.swapObject.setSwapper(this.options.swapMethod);
+      var exists = window.Fx && window.Fx.Swap;
+      var method = this.options.swapMethod;
+      if(exists && method && method != 'direct') {
+        this.swapObject = new Fx.Swap(this.getContainer(),this.options.swapOptions);
+        this.swapObject.setSwapper(method);
+      }
     }
     return this.swapObject;
   },
@@ -258,8 +262,11 @@ XPage = new Class({
     var container = this.getContainer();
     var inner = this.getInnerContainer();
     var content = this.getResponseContent();
+    var swapper = this.getSwapObject();
     content.hide().inject(this.getContainer());
-    this.getSwapObject().getSwapper().setElements(container,inner,content);
+    if(swapper) {
+      swapper.getSwapper().setElements(container,inner,content);
+    }
     this.setNewInnerContainer(content);
   },
 
@@ -274,15 +281,25 @@ XPage = new Class({
   cleanupContentReplace : function() {
     var content = this.getNewInnerContainer();
     var inner = this.getInnerContainer();
-    this.getSwapObject().onComplete(inner,content);
+    var swapper = this.getSwapObject();
+    if(inner && swapper) {
+      this.getSwapObject().onComplete(inner,content);
+    }
     this.setInnerContainer(content);
   },
 
   onBeforeContentReplace : function(fn) {
-    var swapper = this.getSwapObject();
-    swapper.onBeforeSwap(this.getInnerContainer(),this.getNewInnerContainer());
-    swapper.getSwapper().before(fn);
-    this.fireEvent('beforeContent');
+    this.fireBeforeFilter(function() {
+      var swapper = this.getSwapObject();
+      this.fireEvent('beforeContent');
+      if(swapper) {
+        swapper.onBeforeSwap(this.getInnerContainer(),this.getNewInnerContainer());
+        swapper.getSwapper().before(fn);
+      }
+      else {
+        fn();
+      }
+    }.bind(this));
   },
 
   getInnerContainer : function() {
@@ -302,19 +319,60 @@ XPage = new Class({
 
   onAfterContentReplace : function(fn) {
     this.fireEvent('afterContent');
-    this.getSwapObject().getSwapper().after(fn);
+    this.fireAfterFilter(function() {
+      var swapper = this.getSwapObject();
+      if(swapper) {
+        swapper.getSwapper().after(fn);
+      }
+      else {
+        fn();
+      }
+    }.bind(this));
+  },
+
+  setAfterFilter : function(fn) {
+    this.options.after = fn;
+  },
+
+  setBeforeFilter : function(fn) {
+    this.options.before = fn;
+  },
+
+  fireAfterFilter : function(fn) {
+    var after = this.options.after;
+    after ? after(fn) : fn();
+  },
+
+  fireBeforeFilter : function(fn) {
+    var before = this.options.before;
+    before ? before(fn) : fn();
   },
 
   replaceContent : function(fn) {
     if(this.options.replaceContent) {
       this.prepareContentReplace();
       this.onBeforeContentReplace(function() {
-        this.getSwapObject().getSwapper().during(fn);
+        var swapper = this.getSwapObject();
+        if(swapper) {
+          swapper.getSwapper().during(fn);
+        }
+        else {
+          this.replaceContentNormally(fn);
+        }
       }.bind(this));
     }
     else {
       this.fireEvent('content',[this.getResponseHTML()]);
     }
+  },
+
+  replaceContentNormally : function(fn) {
+    var container = this.getContainer();
+    var oldInner = this.getInnerContainer();
+    var newInner = this.getNewInnerContainer();
+    oldInner.destroy();
+    newInner.show();
+    fn();
   },
 
   hasAssets : function() {

@@ -2,7 +2,16 @@ XPage.Loaders = {};
 
 XPage.Loaders.Spinner = {
 
+  options : {
+    noFx : true,
+    style : {
+      opacity : 1
+    }
+  },
+
   init : function(container,options) {
+    var defaults = Object.clone(this.options);
+    options = Object.merge(defaults,options || {});
     this.noFx = !!options.noFx;
     delete options.noFx;
     this.spinner = new Spinner(container,options);
