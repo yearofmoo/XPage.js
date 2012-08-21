@@ -401,7 +401,7 @@ XPage = new Class({
   },
 
   updatePageTitle : function() {
-    this.updatePageValue('title',this.getXView().getTitle());
+    document.title = this.getXView().getTitle();
   },
 
   updatePageClassName : function() {
