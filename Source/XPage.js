@@ -108,7 +108,6 @@ XPage = new Class({
           that.xhr = this;
           that.onRequest();
         },
-        onCancel  : this.onCancel,
         onSuccess : this.onResponse,
         onFailure : this.onFailure
       });
@@ -488,6 +487,7 @@ XPage = new Class({
   cancel : function() {
     if(this.requester) {
       this.requester.cancel();
+      this.onCancel();
     }
   },
 
