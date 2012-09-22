@@ -10,7 +10,7 @@ XPage = new Class({
 
   Implements : [Options, Events],
 
-  Binds : ['onSuccess','onResponse','onRequest','onFailure','onTimeout','onAssetsReady','onAfterSuccess','onReady','onBeforeReady'],
+  Binds : ['onSuccess','onResponse','onRequest','onFailure','onTimeout','onAssetsReady','onAfterSuccess','onReady','onCancel','onBeforeReady'],
 
   options : {
     timeout : 5000,
@@ -108,6 +108,7 @@ XPage = new Class({
           that.xhr = this;
           that.onRequest();
         },
+        onCancel  : this.onCancel,
         onSuccess : this.onResponse,
         onFailure : this.onFailure
       });
@@ -482,6 +483,12 @@ XPage = new Class({
 
   onCancel : function() {
     this.fireEvent('cancel');
+  },
+
+  cancel : function() {
+    if(this.requester) {
+      this.requester.cancel();
+    }
   },
 
   on404 : function() {
